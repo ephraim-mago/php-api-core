@@ -24,6 +24,7 @@
         ]
     },
     "require": {
+        "ext-pdo_sqlite": "*",
         "fruitcake/php-cors": "^1.3",
         "psr/container": "^2.0",
         "symfony/filesystem": "^7.0",
