@@ -33,9 +33,9 @@ class Kernel implements KernelContract
      */
     protected $bootstrappers = [
         // \Framework\Core\Bootstrap\LoadEnvironmentVariables::class,
-        // \Framework\Core\Bootstrap\LoadConfiguration::class,
+        \Framework\Core\Bootstrap\LoadConfiguration::class,
         \Framework\Core\Bootstrap\HandleExceptions::class,
-        // \Framework\Core\Bootstrap\RegisterFacades::class,
+        \Framework\Core\Bootstrap\RegisterFacades::class,
         \Framework\Core\Bootstrap\RegisterProviders::class,
         \Framework\Core\Bootstrap\BootProviders::class,
     ];
@@ -91,6 +91,7 @@ class Kernel implements KernelContract
      */
     protected $middlewareAliases = [
         'auth' => \Framework\Auth\Middleware\Authenticate::class,
+        'securize' => \Framework\Auth\Middleware\Securize::class,
         // 'auth.basic' => \Framework\Auth\Middleware\AuthenticateWithBasicAuth::class,
         // 'auth.session' => \Framework\Session\Middleware\AuthenticateSession::class,
         'throttle' => \Framework\Routing\Middleware\ThrottleRequests::class,

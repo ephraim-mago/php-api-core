@@ -8,9 +8,7 @@ use Framework\Http\Request;
 class UserController extends Controller
 {
     public function index()
-    {
-        dd(app());
-        
+    {   
         $users = User::all();
 
         return $users;
@@ -19,6 +17,7 @@ class UserController extends Controller
     public function show(int $id, Request $request)
     {
         $user = User::find($id);
+        
         if ($user) {
             return $user;
         }

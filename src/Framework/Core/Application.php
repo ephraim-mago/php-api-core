@@ -445,7 +445,7 @@ class Application extends Container implements ApplicationContract
      */
     public function registerConfiguredProviders()
     {
-        $providers = require $this->bootstrapPath("providers.php");
+        $providers = $this->make('config')->get('app')['providers'] ?? [];
 
         foreach ($providers as $provider) {
             $this->register($provider);
@@ -634,6 +634,7 @@ class Application extends Container implements ApplicationContract
     {
         foreach ([
             'app' => [self::class, \Framework\Contracts\Container\Container::class, \Framework\Contracts\Core\Application::class, \Psr\Container\ContainerInterface::class],
+            'config' => [\Framework\Config\Repository::class, \Framework\Contracts\Config\Repository::class],
             'db' => [\Framework\Database\DatabaseManager::class, \Framework\Database\ConnectionResolverInterface::class],
             'db.connection' => [\Framework\Database\Connection::class, \Framework\Database\ConnectionInterface::class],
             'files' => [\Framework\Filesystem\Filesystem::class],

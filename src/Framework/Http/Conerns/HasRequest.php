@@ -122,12 +122,6 @@ trait HasRequest
         }
 
         return isset($input[$key]) ? $input[$key] : $default;
-
-        // return data_get(
-        //     $this->getInputSource()->all() + $this->query->all(),
-        //     $key,
-        //     $default
-        // );
     }
 
     /**
@@ -171,6 +165,24 @@ trait HasRequest
     public function header($key = null, $default = null)
     {
         return $this->retrieveItem('headers', $key, $default);
+    }
+
+    /**
+     * Get the bearer token from the request headers.
+     *
+     * @return string|null
+     */
+    public function bearerToken()
+    {
+        $header = $this->header('Authorization', '');
+
+        $position = strrpos($header, 'Bearer ');
+
+        if ($position !== false) {
+            $header = substr($header, $position + 7);
+
+            return str_contains($header, ',') ? strstr($header, ',', true) : $header;
+        }
     }
 
     /**

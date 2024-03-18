@@ -14,6 +14,7 @@ class RoutingServiceProvider extends ServiceProvider
     public function register()
     {
         $this->registerRouter();
+        $this->registerResponseFactory();
         $this->registerCallableDispatcher();
         $this->registerControllerDispatcher();
     }
@@ -27,6 +28,18 @@ class RoutingServiceProvider extends ServiceProvider
     {
         $this->app->singleton('router', function ($app) {
             return new Router($app);
+        });
+    }
+
+    /**
+     * Register the response factory implementation.
+     *
+     * @return void
+     */
+    protected function registerResponseFactory()
+    {
+        $this->app->singleton(ResponseFactory::class, function ($app) {
+            return new ResponseFactory();
         });
     }
 

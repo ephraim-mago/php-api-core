@@ -2,9 +2,12 @@
 
 namespace Framework\Core\Exceptions;
 
+use Framework\Http\RedirectResponse;
 use Throwable;
 use Framework\Http\Response;
 use Framework\Http\JsonResponse;
+use Framework\Auth\AuthenticationException;
+use Framework\Http\Exceptions\HttpResponseException;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Framework\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
@@ -86,7 +89,12 @@ class Handler implements ExceptionHandlerContract
      */
     public function render($request, Throwable $e)
     {
-        return $this->renderExceptionResponse($request, $e);
+        return match (true) {
+            $e instanceof HttpResponseException => $e->getResponse(),
+            $e instanceof AuthenticationException => $this->unauthenticated($request, $e),
+            // $e instanceof ValidationException => $this->convertValidationExceptionToResponse($e, $request),
+            default => $this->renderExceptionResponse($request, $e),
+        };
     }
 
     /**
@@ -95,13 +103,28 @@ class Handler implements ExceptionHandlerContract
      * @param  \Framework\Http\Request  $request
      * @param  \Throwable  $e
      * @return \Framework\Http\Response|\Framework\Http\JsonResponse
-    //  * @return \Framework\Http\Response|\Framework\Http\JsonResponse|\Framework\Http\RedirectResponse
+     * @return \Framework\Http\Response|\Framework\Http\JsonResponse|\Framework\Http\RedirectResponse
      */
     protected function renderExceptionResponse($request, Throwable $e)
     {
         return $this->shouldReturnJson($request, $e)
             ? $this->prepareJsonResponse($request, $e)
             : $this->prepareResponse($request, $e);
+    }
+
+    /**
+     * Convert an authentication exception into a response.
+     *
+     * @param  \Framework\Http\Request  $request
+     * @param  \Framework\Auth\AuthenticationException  $exception
+     * @return \Framework\Http\Response|\Framework\Http\JsonResponse|\Framework\Http\RedirectResponse
+     */
+    protected function unauthenticated($request, AuthenticationException $exception)
+    {
+        return $this->shouldReturnJson($request, $exception)
+                    ? response()->json(['message' => $exception->getMessage()], 401)
+                    : new RedirectResponse('/login');
+                    // : redirect()->guest($exception->redirectTo() ?? route('login'));
     }
 
     /**
@@ -194,22 +217,14 @@ class Handler implements ExceptionHandlerContract
      */
     protected function convertExceptionToArray(Throwable $e)
     {
-        // return config('app.debug') ? [
-        //     'message' => $e->getMessage(),
-        //     'exception' => get_class($e),
-        //     'file' => $e->getFile(),
-        //     'line' => $e->getLine(),
-        //     'trace' => $e->getTrace(),
-        // ] : [
-        //     'message' => $this->isHttpException($e) ? $e->getMessage() : 'Server Error',
-        // ];
-
-        return [
+        return config('app')['debug'] ? [
             'message' => $e->getMessage(),
             'exception' => get_class($e),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
             'trace' => $e->getTrace(),
+        ] : [
+            'message' => $this->isHttpException($e) ? $e->getMessage() : 'Server Error',
         ];
     }
 

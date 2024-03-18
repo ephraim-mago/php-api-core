@@ -3,9 +3,13 @@
 namespace Framework\Http;
 
 use Closure;
+use RuntimeException;
 use Framework\Contracts\Support\Arrayable;
+use Framework\Session\SymfonySessionDecorator;
 use Symfony\Component\HttpFoundation\InputBag;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use Symfony\Component\HttpFoundation\Exception\SessionNotFoundException;
 
 class Request extends SymfonyRequest implements Arrayable
 {
@@ -40,7 +44,7 @@ class Request extends SymfonyRequest implements Arrayable
     protected $routeResolver;
 
     /**
-     * Create a new Illuminate HTTP request from server variables.
+     * Create a new Framework HTTP request from server variables.
      *
      * @return static
      */
@@ -72,6 +76,30 @@ class Request extends SymfonyRequest implements Arrayable
     }
 
     /**
+     * Get the URL (no query string) for the request.
+     *
+     * @return string
+     */
+    public function url()
+    {
+        return rtrim(preg_replace('/\?.*/', '', $this->getUri()), '/');
+    }
+
+    /**
+     * Get the full URL for the request.
+     *
+     * @return string
+     */
+    public function fullUrl()
+    {
+        $query = $this->getQueryString();
+
+        $question = $this->getBaseUrl() . $this->getPathInfo() === '/' ? '/?' : '?';
+
+        return $query ? $this->url() . $question . $query : $this->url();
+    }
+
+    /**
      * Determine if the request is the result of an AJAX call.
      *
      * @return bool
@@ -89,6 +117,18 @@ class Request extends SymfonyRequest implements Arrayable
     public function pjax()
     {
         return $this->headers->get('X-PJAX') == true;
+    }
+
+    /**
+     * Determine if the request is the result of a prefetch call.
+     *
+     * @return bool
+     */
+    public function prefetch()
+    {
+        return strcasecmp($this->server->get('HTTP_X_MOZ') ?? '', 'prefetch') === 0 ||
+            strcasecmp($this->headers->get('Purpose') ?? '', 'prefetch') === 0 ||
+            strcasecmp($this->headers->get('Sec-Purpose') ?? '', 'prefetch') === 0;
     }
 
     /**
@@ -192,7 +232,7 @@ class Request extends SymfonyRequest implements Arrayable
     }
 
     /**
-     * Create an Illuminate request from a Symfony instance.
+     * Create an Framework request from a Symfony instance.
      *
      * @param  \Symfony\Component\HttpFoundation\Request  $request
      * @return static
@@ -242,6 +282,55 @@ class Request extends SymfonyRequest implements Arrayable
         }
 
         return $files;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function hasSession(bool $skipIfUninitialized = false): bool
+    {
+        return !is_null($this->session);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSession(): SessionInterface
+    {
+        return $this->hasSession()
+            ? new SymfonySessionDecorator($this->session())
+            : throw new SessionNotFoundException;
+    }
+
+    /**
+     * Get the session associated with the request.
+     *
+     * @return \Framework\Contracts\Session\Session
+     *
+     * @throws \RuntimeException
+     */
+    public function session()
+    {
+        if (!$this->hasSession()) {
+            throw new RuntimeException('Session store not set on request.');
+        }
+
+        return $this->session;
+    }
+
+    /**
+     * Set the session instance on the request.
+     *
+     * @param  \Framework\Contracts\Session\Session  $session
+     * @return void
+     */
+    public function setCoreSession($session)
+    {
+        if (!$session instanceof SessionInterface) {
+            $this->session = new SymfonySessionDecorator($session);
+        } else {
+            $this->session = $session;
+        }
     }
 
     /**

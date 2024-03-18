@@ -44,25 +44,7 @@ class HandleCors
      */
     public function handle($request, Closure $next)
     {
-        $this->cors->setOptions(
-            [
-                'paths' => ['api/*', 'sanctum/csrf-cookie'],
-
-                'allowed_methods' => ['*'],
-
-                'allowed_origins' => ['*'],
-
-                'allowed_origins_patterns' => [],
-
-                'allowed_headers' => ['*'],
-
-                'exposed_headers' => [],
-
-                'max_age' => 0,
-
-                'supports_credentials' => false,
-            ]
-        );
+        $this->cors->setOptions($this->container['config']->get('cors', []));
 
         if ($this->cors->isPreflightRequest($request)) {
             $response = $this->cors->handlePreflightRequest($request);
